@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Book } from '../types';
 import { BUSINESS_INFO } from '../data/businessInfo';
+import { getDiscountForQuantity, calculateItemDiscountedPrice } from '../services/discountService';
 import { 
   Eye, 
   Plus, 
@@ -9,10 +10,8 @@ import {
   BookOpen, 
   Flame, 
   Sparkles, 
-  Package, 
-  TrendingUp,
-  Percent,
-  ImageOff
+  Zap,
+  GraduationCap
 } from 'lucide-react';
 
 interface BookCardProps {
@@ -20,6 +19,7 @@ interface BookCardProps {
   isInInquiry: boolean;
   onAddToInquiry: (book: Book, qty: number) => void;
   onQuickView: (book: Book) => void;
+  onDirectBuy?: (book: Book, qty: number) => void;
 }
 
 export const BookCard: React.FC<BookCardProps> = ({
@@ -27,10 +27,15 @@ export const BookCard: React.FC<BookCardProps> = ({
   isInInquiry,
   onAddToInquiry,
   onQuickView,
+  onDirectBuy,
 }) => {
-  const [selectedQty, setSelectedQty] = useState<number>(book.minOrderQty || 10);
+  // Allow single book selection for students! (1 copy minimum)
+  const [selectedQty, setSelectedQty] = useState<number>(1);
   const [addedAnimation, setAddedAnimation] = useState(false);
   const [imageError, setImageError] = useState(false);
+
+  const discountInfo = getDiscountForQuantity(selectedQty);
+  const unitRate = calculateItemDiscountedPrice(book.mrp, discountInfo.discountPercent);
 
   const handleAdd = () => {
     onAddToInquiry(book, selectedQty);
@@ -40,7 +45,7 @@ export const BookCard: React.FC<BookCardProps> = ({
 
   const handleWhatsAppBookInquire = (e: React.MouseEvent) => {
     e.stopPropagation();
-    const text = `Hello Vikash ji (Book.com Lucknow), I want wholesale price and stock inquiry for:\n\n*Book:* ${book.title}\n*Publisher:* ${book.publisher}\n*Quantity:* ${selectedQty} copies\n*MRP:* ₹${book.mrp}\n\nPlease share best wholesale rate & delivery timeline.`;
+    const text = `Hello Vikash ji (Book.com Lucknow), I want to inquire/order:\n\n*Book:* ${book.title}\n*Publisher:* ${book.publisher}\n*Quantity:* ${selectedQty} ${selectedQty === 1 ? 'copy (Student)' : 'copies'}\n*MRP:* ₹${book.mrp}\n*Discount:* ${discountInfo.discountPercent}% OFF\n*Rate:* ₹${unitRate}/pc\n\nPlease confirm availability and dispatch details.`;
     window.open(`https://wa.me/91${BUSINESS_INFO.whatsapp}?text=${encodeURIComponent(text)}`, '_blank');
   };
 
@@ -60,7 +65,7 @@ export const BookCard: React.FC<BookCardProps> = ({
         {book.isNewRelease && (
           <span className="inline-flex items-center gap-1 bg-emerald-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-md shadow-md uppercase tracking-wider">
             <Sparkles className="w-3 h-3 text-emerald-200" />
-            2025-26 Edition
+            2026 Edition
           </span>
         )}
       </div>
@@ -77,11 +82,11 @@ export const BookCard: React.FC<BookCardProps> = ({
         onClick={() => onQuickView(book)}
         className="relative bg-gradient-to-b from-slate-100 to-slate-200/80 p-5 flex items-center justify-center cursor-pointer overflow-hidden border-b border-slate-100 min-h-[220px]"
       >
-        {/* Soft Radial Backlight */}
         <div className="absolute inset-0 bg-radial from-white/80 via-slate-100/60 to-transparent" />
 
         {/* 3D Realistic Book Display Frame */}
-        <div className="relative z-1 w-36 h-52 sm:w-40 sm:h-56 rounded-r-md rounded-l-xs shadow-2xl transition-transform duration-300 group-hover:scale-105 group-hover:-translate-y-1 overflow-hidden bg-slate-900 flex flex-col justify-between border-y border-r border-slate-300/40"
+        <div 
+          className="relative z-1 w-36 h-52 sm:w-40 sm:h-56 rounded-r-md rounded-l-xs shadow-2xl transition-transform duration-300 group-hover:scale-105 group-hover:-translate-y-1 overflow-hidden bg-slate-900 flex flex-col justify-between border-y border-r border-slate-300/40"
           style={{
             boxShadow: '8px 12px 24px -4px rgba(0, 0, 0, 0.3), inset 3px 0 5px rgba(255, 255, 255, 0.2)'
           }}
@@ -100,7 +105,6 @@ export const BookCard: React.FC<BookCardProps> = ({
                 onError={() => setImageError(true)}
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
               />
-              {/* Semi-transparent bottom banner on photo */}
               <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-slate-950/95 via-slate-900/80 to-transparent p-2.5 pt-6 text-white z-5">
                 <p className="text-[10px] font-black uppercase text-amber-400 truncate tracking-wide">
                   {book.publisher}
@@ -138,7 +142,6 @@ export const BookCard: React.FC<BookCardProps> = ({
             </div>
           )}
 
-          {/* Book Spine Crease Gloss Line */}
           <div className="absolute top-0 right-0 bottom-0 left-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent pointer-events-none" />
         </div>
 
@@ -160,13 +163,14 @@ export const BookCard: React.FC<BookCardProps> = ({
       {/* Book Information Section */}
       <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
         <div>
-          {/* Publisher & Category */}
+          {/* Publisher & Student Badge */}
           <div className="flex items-center justify-between text-[11px] text-slate-500 mb-1">
             <span className="font-semibold text-red-600 truncate max-w-[150px]">
               {book.publisher}
             </span>
-            <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[10px] font-medium">
-              MOQ: {book.minOrderQty} copies
+            <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1">
+              <GraduationCap className="w-3 h-3" />
+              1 Book: 25% OFF
             </span>
           </div>
 
@@ -186,13 +190,12 @@ export const BookCard: React.FC<BookCardProps> = ({
             </p>
           )}
 
-          {/* Author info */}
           <p className="text-[11px] text-slate-400 mt-1 truncate">
             By {book.author}
           </p>
         </div>
 
-        {/* Wholesale Pricing & Margin Box */}
+        {/* Dynamic Discount & Pricing Box */}
         <div className="bg-slate-50 rounded-xl p-2.5 border border-slate-200/80 space-y-1.5">
           <div className="flex items-baseline justify-between">
             <div>
@@ -201,16 +204,17 @@ export const BookCard: React.FC<BookCardProps> = ({
                 ₹{book.mrp}
               </span>
             </div>
-            <div className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md">
-              <Percent className="w-3 h-3" />
-              <span>{book.wholesaleDiscountPercent}% Trade Margin</span>
+            <div className={`inline-flex items-center gap-1 text-[11px] font-extrabold px-2 py-0.5 rounded-md ${discountInfo.badgeColor}`}>
+              <span>{discountInfo.discountPercent}% OFF</span>
             </div>
           </div>
 
           <div className="flex items-baseline justify-between pt-1 border-t border-slate-200/60">
-            <span className="text-xs font-bold text-slate-700">Approx. Wholesale Rate:</span>
+            <span className="text-xs font-bold text-slate-700">
+              {selectedQty === 1 ? 'Single Student Price:' : 'Offer Price:'}
+            </span>
             <span className="text-base font-extrabold text-slate-900 font-mono">
-              ₹{book.wholesaleEstimatedPrice || Math.round(book.mrp * (1 - book.wholesaleDiscountPercent / 100))}
+              ₹{unitRate}
               <span className="text-[10px] text-slate-400 font-normal ml-0.5">/unit</span>
             </span>
           </div>
@@ -218,20 +222,23 @@ export const BookCard: React.FC<BookCardProps> = ({
 
         {/* Action Controls */}
         <div className="space-y-2 pt-1">
-          {/* Quantity Selector + Add to Quote */}
+          {/* Quantity Selector + Add to Cart */}
           <div className="flex items-center gap-2">
-            <div className="w-24">
+            <div className="w-28">
               <select
                 value={selectedQty}
                 onChange={(e) => setSelectedQty(Number(e.target.value))}
                 className="w-full bg-slate-100 border border-slate-300 rounded-xl px-2 py-2 text-xs font-bold text-slate-800 outline-none focus:border-red-500 cursor-pointer"
-                title="Select Order Quantity"
+                title="Select Quantity (Single book eligible for 25% discount)"
               >
-                <option value={book.minOrderQty}>{book.minOrderQty} copies (MOQ)</option>
-                <option value={book.minOrderQty * 2}>{book.minOrderQty * 2} copies</option>
-                <option value={50}>50 copies (Carton)</option>
-                <option value={100}>100 copies (Super Wholesale)</option>
-                <option value={200}>200+ copies</option>
+                <option value={1}>1 copy (25% OFF)</option>
+                <option value={2}>2 copies (30% OFF)</option>
+                <option value={5}>5 copies (30% OFF)</option>
+                <option value={10}>10 copies (30% OFF)</option>
+                <option value={15}>15 copies (35% OFF)</option>
+                <option value={25}>25 copies (35% OFF)</option>
+                <option value={50}>50 copies (35% OFF)</option>
+                <option value={100}>100 copies (40% OFF)</option>
               </select>
             </div>
 
@@ -254,26 +261,40 @@ export const BookCard: React.FC<BookCardProps> = ({
               ) : isInInquiry ? (
                 <>
                   <Check className="w-3.5 h-3.5" />
-                  In Quote ({selectedQty})
+                  In Cart ({selectedQty})
                 </>
               ) : (
                 <>
                   <Plus className="w-3.5 h-3.5" />
-                  Add to Bulk Quote
+                  Add to Cart
                 </>
               )}
             </button>
           </div>
 
-          {/* Quick WhatsApp Inquiry for this title */}
-          <button
-            onClick={handleWhatsAppBookInquire}
-            id={`whatsapp-inquire-${book.id}`}
-            className="w-full py-1.5 px-3 rounded-xl text-[11px] font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
-          >
-            <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
-            Instant WhatsApp Price for this Title
-          </button>
+          {/* Dual Action: Direct Purchase via Razorpay OR Inquire on WhatsApp */}
+          <div className="grid grid-cols-2 gap-1.5">
+            <button
+              type="button"
+              onClick={() => onDirectBuy ? onDirectBuy(book, selectedQty) : handleAdd()}
+              id={`direct-buy-razorpay-${book.id}`}
+              className="py-1.5 px-2 rounded-xl text-[11px] font-bold text-white bg-slate-900 hover:bg-red-600 transition-colors flex items-center justify-center gap-1 cursor-pointer shadow-2xs"
+              title="Direct purchase via Razorpay / COD"
+            >
+              <Zap className="w-3 h-3 text-yellow-400" />
+              <span>⚡ Buy Now</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleWhatsAppBookInquire}
+              id={`whatsapp-inquire-${book.id}`}
+              className="py-1.5 px-2 rounded-xl text-[11px] font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition-colors flex items-center justify-center gap-1 cursor-pointer truncate"
+            >
+              <MessageSquare className="w-3 h-3 text-emerald-600 flex-shrink-0" />
+              <span>WhatsApp</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>

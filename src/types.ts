@@ -69,13 +69,21 @@ export interface InquiryItem {
 
 export interface BuyerDetails {
   name: string;
-  businessName: string;
-  businessType: 'Retail Bookstore' | 'Coaching Institute' | 'School / College Library' | 'Distributor / Reseller' | 'Student Group / Bulk Buyer' | 'Other';
   phone: string;
-  email: string;
-  city: string;
-  state: string;
-  pincode?: string;
+  email?: string;
+  // Full delivery address
+  houseNo: string; // House / Flat / Shop / Room No
+  streetAddress: string; // Road / Street / Colony Name
+  landmark?: string; // Landmark
+  pincode: string; // 6-digit PIN code
+  city: string; // Auto-filled via PIN code or manual
+  state: string; // Auto-filled via PIN code or manual
+  // Optional Institute / Bookstore
+  institutionName?: string; // Optional coaching, school, bookstore or institute name
+  businessName?: string; // Backwards compatible
+  buyerRole?: 'Student' | 'Retail Bookstore' | 'Coaching Institute' | 'School / College Library' | 'Distributor / Reseller' | 'Other';
+  businessType?: 'Student (Single / Multi Copy)' | 'Retail Bookstore' | 'Coaching Institute' | 'School / College Library' | 'Distributor / Reseller' | 'Student Group / Bulk Buyer' | 'Other';
+  paymentMethod?: 'razorpay' | 'cod';
   deliveryRequirement?: 'Immediate (1-3 Days)' | 'Within 1 Week' | 'General Quote Enquiry';
   notes?: string;
 }
@@ -105,3 +113,16 @@ export interface BusinessDetails {
   pan: string;
   workingHours: string;
 }
+
+export interface RazorpayPaymentSuccess {
+  order_id: string;
+  payment_id: string;
+  signature?: string;
+  amount: number; // in Rupees
+  items: InquiryItem[];
+  buyerInfo: BuyerDetails;
+  timestamp: string;
+  paymentMethod?: 'razorpay' | 'cod';
+}
+
+

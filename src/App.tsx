@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { BOOKS_CATALOG } from './data/booksData';
 import { CATEGORIES_DATA } from './data/categoriesData';
 import { BUSINESS_INFO } from './data/businessInfo';
-import { Book, ExamCategory, InquiryItem } from './types';
+import { Book, ExamCategory, InquiryItem, RazorpayPaymentSuccess } from './types';
 
 // Components
 import { TickerBanner } from './components/TickerBanner';
@@ -17,6 +17,8 @@ import { VisitingCardModal } from './components/VisitingCardModal';
 import { PublisherShowcase } from './components/PublisherShowcase';
 import { WholesaleBenefits } from './components/WholesaleBenefits';
 import { Footer } from './components/Footer';
+import { PaymentSuccessModal } from './components/PaymentSuccessModal';
+import { PublisherCatalogGroup } from './components/PublisherCatalogGroup';
 
 // Icons
 import { 
@@ -50,6 +52,7 @@ export default function App() {
   const [isInquiryDrawerOpen, setIsInquiryDrawerOpen] = useState<boolean>(false);
   const [isCustomListModalOpen, setIsCustomListModalOpen] = useState<boolean>(false);
   const [isVisitingCardModalOpen, setIsVisitingCardModalOpen] = useState<boolean>(false);
+  const [paymentSuccessData, setPaymentSuccessData] = useState<RazorpayPaymentSuccess | null>(null);
 
   // Bulk Inquiry Cart (with localStorage persistence)
   const [inquiryItems, setInquiryItems] = useState<InquiryItem[]>(() => {
@@ -180,6 +183,11 @@ export default function App() {
     setInquiryItems([]);
   };
 
+  const handleDirectBuy = (book: Book, qty: number) => {
+    handleAddToInquiry(book, qty);
+    setIsInquiryDrawerOpen(true);
+  };
+
   const resetAllFilters = () => {
     setSelectedCategory('all');
     setSelectedLanguage('all');
@@ -289,20 +297,15 @@ export default function App() {
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
-              {filteredBooks.map((book) => {
-                const isInInquiry = inquiryItems.some((item) => item.book.id === book.id);
-                return (
-                  <BookCard
-                    key={book.id}
-                    book={book}
-                    isInInquiry={isInInquiry}
-                    onAddToInquiry={handleAddToInquiry}
-                    onQuickView={(b) => setQuickViewBook(b)}
-                  />
-                );
-              })}
-            </div>
+            <PublisherCatalogGroup
+              books={filteredBooks}
+              inquiryItems={inquiryItems}
+              onAddToInquiry={handleAddToInquiry}
+              onQuickView={(b) => setQuickViewBook(b)}
+              onDirectBuy={handleDirectBuy}
+              selectedPublisherFilter={selectedPublisher}
+              onSelectPublisherFilter={setSelectedPublisher}
+            />
           )}
         </section>
 
@@ -397,6 +400,7 @@ export default function App() {
         book={quickViewBook}
         onClose={() => setQuickViewBook(null)}
         onAddToInquiry={handleAddToInquiry}
+        onDirectBuy={handleDirectBuy}
       />
 
       <BulkInquiryDrawer
@@ -406,6 +410,7 @@ export default function App() {
         onUpdateQty={handleUpdateQty}
         onRemoveItem={handleRemoveItem}
         onClearAll={handleClearAll}
+        onPaymentSuccess={setPaymentSuccessData}
       />
 
       <CustomListInquiryModal
@@ -416,6 +421,11 @@ export default function App() {
       <VisitingCardModal
         isOpen={isVisitingCardModalOpen}
         onClose={() => setIsVisitingCardModalOpen(false)}
+      />
+
+      <PaymentSuccessModal
+        paymentData={paymentSuccessData}
+        onClose={() => setPaymentSuccessData(null)}
       />
     </div>
   );
